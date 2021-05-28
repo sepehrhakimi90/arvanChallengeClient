@@ -9,6 +9,10 @@ import (
 	"github.com/seperhakimi90/arvanChallengeClient/utils"
 )
 
+const (
+	nextExpiringRawQuery = "SELECT * FROM rules where end_time > ?"
+)
+
 type sqliteRuleRepo struct {
 	db *gorm.DB
 }
@@ -45,6 +49,15 @@ func (s *sqliteRuleRepo) DeleteById(id int) error {
 		return result.Error
 	}
 	return nil
+}
+
+func (s *sqliteRuleRepo) GetNextExpiringRuleTime() (*entity.Rule, error) {
+	rule := &entity.Rule{}
+	result := s.db.Raw(nextExpiringRawQuery, time.Now().Unix()).Scan(rule)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return rule, nil
 }
 
 func getEndTime(startTime time.Time, ttl int) int64{
