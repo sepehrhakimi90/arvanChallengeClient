@@ -5,7 +5,7 @@ import (
 )
 
 type RuleEngine interface {
-	add(*entity.Rule) error
-	delete(*entity.Rule) error
-	reset() error
+	Add(*entity.Rule) error
+	Delete(*entity.Rule) error
+	Reset() error
 }

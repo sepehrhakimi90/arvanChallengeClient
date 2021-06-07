@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	nextExpiringRawQuery = "SELECT * FROM rules where end_time > ?"
+	nextExpiringRawQuery = "SELECT * FROM rules where end_time = (SELECT min(end_time) from rules)"
 )
 
 type sqliteRuleRepo struct {
@@ -19,11 +19,11 @@ type sqliteRuleRepo struct {
 
 func NewSqliteRuleRepository(db *gorm.DB) RuleRepository{
 	repo := sqliteRuleRepo{db: db}
+	db.Where("1=1").Delete(&entity.Rule{})
 	return &repo
 }
 
 func (s *sqliteRuleRepo) Save(rule *entity.Rule) (*entity.Rule, error) {
-	rule.EndTime = getEndTime(rule.StartTime, rule.TTL)
 	result := s.db.Create(&rule)
 	if result.Error != nil {
 		utils.LogError("sqlLiteRuleRepository", "Save", result.Error)
@@ -42,7 +42,7 @@ func (s *sqliteRuleRepo) GetExpiredRules() ([]entity.Rule, error) {
 	return rules, nil
 }
 
-func (s *sqliteRuleRepo) DeleteById(id int) error {
+func (s *sqliteRuleRepo) DeleteById(id uint) error {
 	result := s.db.Delete(&entity.Rule{}, id)
 	if result.Error != nil {
 		utils.LogError("sqlLiteRuleRepository", "DeleteById", result.Error)
@@ -58,8 +58,4 @@ func (s *sqliteRuleRepo) GetNextExpiringRuleTime() (*entity.Rule, error) {
 		return nil, result.Error
 	}
 	return rule, nil
-}
-
-func getEndTime(startTime time.Time, ttl int) int64{
-	return startTime.Add(time.Duration(ttl) * time.Second).Unix()
 }
